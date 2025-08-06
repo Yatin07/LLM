@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Upload</title>
+</head>
+<body>
+    <h2>Test Document Upload</h2>
+    
+    <input type="file" id="fileInput" accept=".pdf,.docx,.txt">
+    <button onclick="testUpload()">Upload Test</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function testUpload() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            const resultDiv = document.getElementById('result');
+            
+            if (!file) {
+                alert('Please select a file first!');
+                return;
+            }
+            
+            // Create test content if no file selected
+            const testContent = `
+Test Insurance Policy Document
+
+Coverage Details:
+- Age limit: 18-65 years
+- Knee surgery: Up to ₹85,000  
+- Emergency procedures: Covered from day 1
+- Geographic coverage: Pan India including Pune
+
+Exclusions:
+- Cosmetic surgery: Not covered
+- Dental: Not covered unless accidental
+            `;
+            
+            const formData = new FormData();
+            
+            if (file) {
+                formData.append('file', file);
+            } else {
+                // Create a test file
+                const blob = new Blob([testContent], { type: 'text/plain' });
+                formData.append('file', blob, 'test_policy.txt');
+            }
+            
+            resultDiv.innerHTML = '<p>Uploading...</p>';
+            
+            try {
+                const response = await fetch('http://127.0.0.1:5000/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer default-token-change-me'
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <h3>✅ Upload Successful!</h3>
+                        <p><strong>File:</strong> ${result.filename}</p>
+                        <p><strong>Status:</strong> ${result.status}</p>
+                        <p><strong>Chunks Added:</strong> ${result.vector_store?.chunks_added}</p>
+                        <p><strong>Words:</strong> ${result.stats?.words}</p>
+                        <h4>Test Query:</h4>
+                        <button onclick="testQuery()">Ask: Knee surgery coverage</button>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<h3>❌ Upload Failed</h3><p>${result.error || 'Unknown error'}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<h3>❌ Network Error</h3><p>${error.message}</p>`;
+            }
+        }
+        
+        async function testQuery() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await fetch('http://127.0.0.1:5000/query', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer default-token-change-me',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        query: 'What is covered for knee surgery for a 46-year-old in Pune?'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML += `
+                        <h3>🎯 Query Result:</h3>
+                        <p><strong>Decision:</strong> ${result.decision}</p>
+                        <p><strong>Amount:</strong> ${result.amount}</p>
+                        <p><strong>Method:</strong> ${result.analysis_method}</p>
+                        <p><strong>Justification:</strong> ${result.justification}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML += `<h3>❌ Query Failed</h3><p>${result.error}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML += `<h3>❌ Query Error</h3><p>${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

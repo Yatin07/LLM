@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM Document Processing System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .section {
+            margin-bottom: 40px;
+            padding: 30px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border-left: 5px solid #4facfe;
+        }
+        
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .upload-area {
+            border: 3px dashed #4facfe;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #00f2fe;
+            background: #f0f8ff;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+        
+        .query-section {
+            background: white;
+        }
+        
+        .query-input {
+            width: 100%;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .query-input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 10px rgba(79, 172, 254, 0.2);
+        }
+        
+        .query-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.3s ease;
+        }
+        
+        .query-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border-left: 5px solid #28a745;
+            display: none;
+        }
+        
+        .result h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+        
+        .result-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .error {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .example-queries {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .example-query {
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        
+        .example-query:hover {
+            border-color: #4facfe;
+            transform: translateY(-2px);
+        }
+        
+        @media (max-width: 768px) {
+            .example-queries {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 LLM Document Processor</h1>
+            <p>Upload documents and ask questions using AI</p>
+        </div>
+        
+        <div class="content">
+            <!-- Document Upload Section -->
+            <div class="section">
+                <h2>📄 Upload Document</h2>
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <input type="file" id="fileInput" class="file-input" accept=".pdf,.docx,.txt" onchange="uploadDocument()">
+                    <div>
+                        <h3>📁 Click to select file</h3>
+                        <p>Supports PDF, DOCX, and TXT files</p>
+                        <button class="upload-btn">Choose File</button>
+                    </div>
+                </div>
+                <div id="uploadStatus"></div>
+            </div>
+            
+            <!-- Query Section -->
+            <div class="section query-section">
+                <h2>🔍 Ask Questions</h2>
+                <textarea 
+                    id="queryInput" 
+                    class="query-input" 
+                    placeholder="Ask questions about your documents... 
+                    
+Example: '46-year-old male, knee surgery in Pune, 3-month-old insurance policy'"
+                ></textarea>
+                
+                <div class="example-queries">
+                    <div class="example-query" onclick="setQuery('46-year-old male, knee surgery in Pune, 3-month-old insurance policy')">
+                        <strong>Insurance Query</strong><br>
+                        <small>Age, procedure, location check</small>
+                    </div>
+                    <div class="example-query" onclick="setQuery('Emergency surgery coverage')">
+                        <strong>Emergency Coverage</strong><br>
+                        <small>Check emergency procedures</small>
+                    </div>
+                    <div class="example-query" onclick="setQuery('What is the coverage limit?')">
+                        <strong>Coverage Limits</strong><br>
+                        <small>Check policy limits</small>
+                    </div>
+                    <div class="example-query" onclick="setQuery('Age eligibility requirements')">
+                        <strong>Eligibility</strong><br>
+                        <small>Check eligibility criteria</small>
+                    </div>
+                </div>
+                
+                <button class="query-btn" onclick="processQuery()">🚀 Process Query</button>
+                
+                <div id="queryResult" class="result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:5000';
+        const API_TOKEN = 'default-token-change-me';
+        
+        function setQuery(query) {
+            document.getElementById('queryInput').value = query;
+        }
+        
+        async function uploadDocument() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            const statusDiv = document.getElementById('uploadStatus');
+            
+            if (!file) return;
+            
+            statusDiv.innerHTML = '<div class="loading">📤 Uploading and processing document...</div>';
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch(`${API_BASE}/upload`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_TOKEN}`
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `
+                        <div class="status success">
+                            ✅ Document processed successfully!<br>
+                            <strong>File:</strong> ${result.filename}<br>
+                            <strong>Chunks added:</strong> ${result.vector_store?.chunks_added || 'N/A'}<br>
+                            <strong>Total chunks:</strong> ${result.vector_store?.total_chunks || 'N/A'}<br>
+                            <strong>Words:</strong> ${result.stats?.words || 'N/A'}
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `
+                        <div class="status error">
+                            ❌ Upload failed: ${result.error || 'Unknown error'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Network error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        async function processQuery() {
+            const queryInput = document.getElementById('queryInput');
+            const resultDiv = document.getElementById('queryResult');
+            const query = queryInput.value.trim();
+            
+            if (!query) {
+                alert('Please enter a query!');
+                return;
+            }
+            
+            resultDiv.style.display = 'block';
+            resultDiv.innerHTML = '<div class="loading">🤔 Processing query with AI...</div>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${API_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <h3>🎯 Analysis Result</h3>
+                        <div class="result-item">
+                            <strong>Decision:</strong> ${result.decision || 'N/A'}
+                        </div>
+                        <div class="result-item">
+                            <strong>Amount:</strong> ${result.amount || 'N/A'}
+                        </div>
+                        <div class="result-item">
+                            <strong>Justification:</strong> ${result.justification || 'N/A'}
+                        </div>
+                        <div class="result-item">
+                            <strong>Analysis Method:</strong> ${result.analysis_method || 'N/A'}
+                        </div>
+                        <div class="result-item">
+                            <strong>Relevant Chunks:</strong> ${result.relevant_chunks || 0}
+                        </div>
+                        <div class="result-item">
+                            <strong>LLM Model:</strong> ${result.llm_model || 'N/A'}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h3>❌ Query Failed</h3>
+                            <p>${result.error || 'Unknown error occurred'}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>❌ Network Error</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Check if server is running on page load
+        window.onload = async function() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    console.log('✅ Server is running');
+                    document.body.style.border = '3px solid green';
+                    setTimeout(() => document.body.style.border = 'none', 2000);
+                } else {
+                    console.log('⚠️ Server returned error');
+                }
+            } catch (error) {
+                console.log('❌ Server not reachable:', error.message);
+                alert(`⚠️ Server not reachable. Make sure the Flask server is running on ${API_BASE}`);
+            }
+        };
+    </script>
+</body>
+</html>
